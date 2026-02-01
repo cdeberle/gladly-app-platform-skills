@@ -1,10 +1,12 @@
 # Gladly App Platform Skills for Claude Code
 
-Claude Code skills for building and deploying Gladly App Platform applications. These skills guide you from raw API payload analysis through fully deployed integrations on the Gladly platform.
+Claude Code skills for building, deploying, and auditing Gladly App Platform applications. These skills guide you from raw API payload analysis through fully deployed integrations on the Gladly platform.
 
 ## Skills Included
 
 ### `/app-platform-builder`
+
+**Scope**: Creates new apps from scratch. Requires no existing code. Cannot be used to fix or modify existing apps.
 
 Build App Platform apps from scratch with a guided 7-phase checkpoint workflow:
 
@@ -28,6 +30,8 @@ Build App Platform apps from scratch with a guided 7-phase checkpoint workflow:
 
 ### `/app-platform-deploy`
 
+**Scope**: Manages the deployment lifecycle for completed apps. Handles testing, validation, installation, configuration, and version upgrades.
+
 Deploy and manage App Platform apps with 4 operating modes:
 
 | Mode | When to Use |
@@ -44,6 +48,32 @@ Deploy and manage App Platform apps with 4 operating modes:
 - Breaking vs non-breaking change guidance
 - Troubleshooting decision trees
 
+### `/app-platform-audit`
+
+**Scope**: Read-only analysis. Generates compliance reports with findings and remediation suggestions but does not modify any files.
+
+Audit existing App Platform apps for best practices compliance:
+
+| Step | Name | Description |
+|------|------|-------------|
+| 1 | **VALIDATE** | Run appcfg CLI validation |
+| 2 | **STRUCTURE** | Check directory structure and required files |
+| 3 | **AUTH** | Audit authentication setup (OAuth, headers, signing) |
+| 4 | **SCHEMAS** | Audit GraphQL schemas for patterns |
+| 5 | **DATA PULLS** | Check safety patterns, type checks, and test coverage |
+| 6 | **ACTIONS** | Verify error handling completeness |
+| 7 | **UI** | Audit Flexible Card best practices |
+| 8 | **REPORT** | Generate findings with prioritized remediation plan |
+
+**Key Features:**
+- Comprehensive best practices checklist matching builder skill patterns
+- Severity-rated findings (Critical, High, Medium)
+- Authentication audit: OAuth flows, request signing, secrets separation
+- Advanced template pattern verification: `kindIs`, `hasKey`, root context, DateTime
+- Advanced UI pattern checks: operators, special variables, component attributes
+- Test coverage assessment
+- Self-contained remediation plan with specific fix recommendations
+
 ## Installation
 
 1. Clone this repository:
@@ -55,6 +85,7 @@ Deploy and manage App Platform apps with 4 operating modes:
    ```bash
    ln -s /path/to/gladly-app-platform-skills/skills/app-platform-builder ~/.claude/skills/app-platform-builder
    ln -s /path/to/gladly-app-platform-skills/skills/app-platform-deploy ~/.claude/skills/app-platform-deploy
+   ln -s /path/to/gladly-app-platform-skills/skills/app-platform-audit ~/.claude/skills/app-platform-audit
    ```
 
 ## Prerequisites
@@ -73,6 +104,9 @@ claude
 
 # Deploy an existing app
 /app-platform-deploy
+
+# Audit an existing app for best practices
+/app-platform-audit
 ```
 
 ### Example: Building a New Integration
@@ -84,6 +118,14 @@ claude
 5. Approve data pulls and actions at each checkpoint
 6. Customize UI templates
 7. Validate and handoff to `/app-platform-deploy`
+
+### Example: Auditing an Existing App
+
+1. Navigate to an existing App Platform app directory
+2. Run `/app-platform-audit`
+3. Review the generated compliance report
+4. Address critical and high-priority issues
+5. Re-run audit to verify fixes
 
 ## Skill Structure
 
@@ -100,12 +142,17 @@ skills/
 │       ├── ui-card-patterns.md           # Flexible Card XML
 │       └── authentication-patterns.md    # Auth setup
 │
-└── app-platform-deploy/
-    ├── SKILL.md                          # Main skill (4 modes)
+├── app-platform-deploy/
+│   ├── SKILL.md                          # Main skill (4 modes)
+│   └── references/
+│       ├── command-reference.md          # appcfg CLI commands
+│       ├── troubleshooting.md            # Debugging guide
+│       └── schema-versioning.md          # Version management
+│
+└── app-platform-audit/
+    ├── SKILL.md                          # Main skill (7-step audit)
     └── references/
-        ├── command-reference.md          # appcfg CLI commands
-        ├── troubleshooting.md            # Debugging guide
-        └── schema-versioning.md          # Version management
+        └── audit-checklist.md            # Complete audit checklist
 ```
 
 ## Design Principles
@@ -133,6 +180,7 @@ These skills are designed for high AI adherence rates:
 | [command-reference.md](skills/app-platform-deploy/references/command-reference.md) | CLI command reference |
 | [troubleshooting.md](skills/app-platform-deploy/references/troubleshooting.md) | Debugging workflows |
 | [schema-versioning.md](skills/app-platform-deploy/references/schema-versioning.md) | Version management |
+| [audit-checklist.md](skills/app-platform-audit/references/audit-checklist.md) | Complete audit checklist |
 
 ## Changelog
 

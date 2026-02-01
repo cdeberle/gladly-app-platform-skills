@@ -35,6 +35,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `schema-versioning.md` - Breaking vs non-breaking changes, upgrade paths
   - `troubleshooting.md` - Debugging workflows, common error messages, decision trees
 
+#### app-platform-audit skill
+- 8-step audit workflow: VALIDATE → STRUCTURE → AUTH → SCHEMAS → DATA PULLS → ACTIONS → UI → REPORT
+- Comprehensive best practices verification against all reference documentation
+- Severity-rated findings system (Critical, High, Medium)
+- Authentication audit: OAuth flows, request signing, secrets separation
+- Safety pattern verification for data pulls and actions
+- Advanced template pattern checks: `kindIs`, `hasKey`, root context in range, DateTime conversion
+- Advanced UI pattern checks: lowercase operators, special variables, Image/Column/Formula attributes
+- Test coverage assessment
+- Structured audit report generation with prioritized remediation plan
+- Self-contained output with actionable fix recommendations
+- Reference documentation:
+  - `audit-checklist.md` - Complete checklist covering all patterns from builder skill
+
 ### Design Decisions
 
 The following design principles were applied to maximize AI adherence rates:
