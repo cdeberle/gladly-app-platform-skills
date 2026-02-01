@@ -125,7 +125,7 @@ Read `data/data_schema.graphql` and verify:
 | @dataType directive | All pullable types have `@dataType(name: "prefix_name", version: "X.Y")` | Critical |
 | Type naming | Data type names use snake_case with prefix (e.g., `acme_customer`) | High |
 | Type ordering | Types defined before they are referenced (no forward declarations) | Critical |
-| ID field | Root types have `id: ID!` | High |
+| ID field | Root types have id: ID! | High |
 | DateTime fields | Fields ending in `At`, `Date`, `Time` use `DateTime` type | Medium |
 | Currency fields | Price/amount fields use `Currency` type | Medium |
 | Relationships | `@parentId` or `@childIds` directive on child collections | High |
@@ -135,8 +135,8 @@ Read `data/data_schema.graphql` and verify:
 | Check | What to Look For | Severity |
 |-------|------------------|----------|
 | @action directive | All mutations have `@action(name: "action_name")` | Critical |
-| Return type | Mutations return type with `status: String!` | High |
-| Required inputs | Required inputs marked with `!` | Medium |
+| Return type | Mutations return type with status: String! | High |
+| Required inputs | Required inputs marked with ! | Medium |
 
 **Record findings**: List schema issues found.
 

@@ -56,7 +56,7 @@ Complete checklist for auditing Gladly App Platform apps against best practices.
 - [ ] All pullable types have `@dataType(name: "prefix_name", version: "X.Y")`
 - [ ] Data type names use snake_case with app prefix
 - [ ] Types defined before they are referenced (no forward declarations)
-- [ ] Root types have `id: ID!` field
+- [ ] Root types have id: ID! field
 - [ ] Child types have parent reference field (e.g., `customerId: String`)
 - [ ] Relationship directives used correctly:
   - [ ] `@parentId(template: "{{.id}}")` when child has parentId field
@@ -73,8 +73,8 @@ Complete checklist for auditing Gladly App Platform apps against best practices.
 
 - [ ] All mutations have `@action(name: "action_name")` directive
 - [ ] Action names use snake_case
-- [ ] Required inputs marked with `!`
-- [ ] Return type includes `status: String!` and `message: String`
+- [ ] Required inputs marked with !
+- [ ] Return type includes status: String! and message: String
 
 ---
 
