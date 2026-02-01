@@ -2,6 +2,54 @@
 
 This reference covers Flexible Card XML patterns for Gladly Hero UI templates.
 
+## Data Context and Scoping
+
+### Understanding Data Context
+
+Each component renders within a data context (scope). The context determines what data is accessible:
+
+```xml
+<StringValue dataSource="..." />      <!-- Scoped to top-level data object -->
+
+<List dataSource="orders">            <!-- Scoped to top-level data -->
+  <DateTimeValue dataSource="..." />  <!-- Scoped to orders[x] -->
+  <List dataSource="items">           <!-- Iterates over orders[x].items -->
+    <StringValue dataSource="..." />  <!-- Scoped to orders[x].items[y] -->
+  </List>
+</List>
+```
+
+### Special Variables
+
+Each component has access to these special variables:
+
+| Variable | Description | Availability |
+|----------|-------------|--------------|
+| `__data` | Current data context/scope | Always |
+| `__root` | Top-level data object from GraphQL | Always |
+| `__parent` | Parent scope of the list element | Inside List only |
+| `__index` | Current iterator index (0-based) | Inside List only |
+
+**Example using special variables:**
+
+```xml
+<List dataSource="orders">
+  <!-- Access current item's field -->
+  <StringValue dataSource="orderNumber" label="Order #" />
+
+  <!-- Access parent scope -->
+  <Formula label="Customer">{{__parent.customerName}}</Formula>
+
+  <!-- Access root data -->
+  <Formula label="Total Orders">{{__root.orders | length}}</Formula>
+
+  <!-- Access index -->
+  <Formula label="Order">{{__index + 1}} of {{__root.orders | length}}</Formula>
+</List>
+```
+
+---
+
 ## Directory Structure
 
 ```
@@ -369,3 +417,223 @@ For line items or nested data:
 3. **Long labels truncate** - Keep under 15 characters
 4. **Addresses need stacked** - Use `displayStyle="stacked"` with `maxLines`
 5. **Test with real data** - Fixtures may not show overflow issues
+
+---
+
+## Conditional Rendering (`when` Support)
+
+### Components That Support `when`
+
+| Component | Supports `when`? |
+|-----------|------------------|
+| Block | Yes |
+| ColumnGroup | Yes |
+| Section | Yes |
+| Drawer | Yes |
+| Divider | Yes |
+| Image | Yes |
+| List | Yes |
+| StringValue | Yes |
+| NumericValue | Yes |
+| CurrencyValue | Yes |
+| DateTimeValue | Yes |
+| BooleanValue | Yes |
+| Link | Yes |
+| Formula | Yes |
+| **Text** | **No** |
+| **Spacer** | **No** |
+
+### Workaround for Text and Spacer
+
+Wrap in a `Block` element:
+
+```xml
+<!-- WRONG: Text doesn't support when -->
+<Text when="cancelledAt is not null" fontWeight="medium">Cancelled</Text>
+
+<!-- CORRECT: Wrap in Block -->
+<Block when="cancelledAt is not null">
+  <Text fontWeight="medium">Cancelled</Text>
+</Block>
+```
+
+---
+
+## Conditional Expression Reference
+
+**Important:** Logical operators must be **lowercase**: `and`, `or`, `not`
+
+| Expression | Meaning |
+|------------|---------|
+| `x < y`, `x > y` | Less than / greater than |
+| `x == y` | Equals |
+| `(x < y) and (z > q)` | Both conditions true |
+| `(x < y) or (z > q)` | Either condition true |
+| `not (x == y)` | Not equals |
+| `x is defined` | Variable exists |
+| `x is not defined` | Variable doesn't exist |
+| `x is null` | Variable is null |
+| `x is not null` | Variable is not null |
+| `x is empty` | Empty object `{}` |
+| `x is not empty` | Has attributes |
+
+---
+
+## Component Attribute Quick Reference
+
+### Data Display Components
+
+All data components share these common attributes:
+
+| Attribute | Values | Purpose |
+|-----------|--------|---------|
+| `dataSource` | String | Data binding path |
+| `label` | String | Display label |
+| `valueAlignment` | `left`, `right`, `center` | Value alignment |
+| `displayStyle` | `default`, `stacked` | Layout style |
+| `valueFontWeight` | `light`, `regular`, `medium`, `semiBold`, `bold` | Value emphasis |
+| `valueFontSize` | `small`, `default`, `medium`, `large`, `extraLarge` | Value size |
+| `maxLines` | 1-10 | Text truncation |
+| `when` | Expression | Conditional rendering |
+
+### CurrencyValue Specific
+
+| Attribute | Values | Purpose |
+|-----------|--------|---------|
+| `currencyCodeSource` | String | Data path for currency code |
+| `defaultCurrencyCode` | String | Fallback currency (e.g., "USD") |
+| `negativeValueStyle` | `standard`, `accounting` | -$12.95 vs ($12.95) |
+
+### DateTimeValue Specific
+
+| Attribute | Values | Purpose |
+|-----------|--------|---------|
+| `format` | String | Date format mask (e.g., "MM/DD/YYYY") |
+
+### BooleanValue Specific
+
+| Attribute | Values | Purpose |
+|-----------|--------|---------|
+| `displayTrueAs` | String | Text for true (e.g., "Yes") |
+| `displayFalseAs` | String | Text for false (e.g., "No") |
+
+### Link Specific
+
+| Attribute | Values | Purpose |
+|-----------|--------|---------|
+| `linkUrl` | String | URL (supports interpolation) |
+| `linkText` | String | Display text |
+
+### Image Specific
+
+| Attribute | Values | Purpose |
+|-----------|--------|---------|
+| `dataSource` | String | URL data path |
+| `defaultUrl` | String | Fallback URL |
+| `size` | `auto`, `extraSmall`, `small`, `medium`, `large`, `extraLarge`, `{N}px` | Image size |
+| `mode` | `fill`, `fit` | Scaling mode |
+| `shape` | `circle`, `rectangle` | Image shape |
+
+### Container Components
+
+**Block:**
+| Attribute | Values |
+|-----------|--------|
+| `padding` | `none`, `extraSmall`, `small`, `medium`, `large`, `extraLarge` |
+| `border` | `true`, `false` |
+| `alignment` | `left`, `right`, `center` |
+
+**Section:**
+| Attribute | Values |
+|-----------|--------|
+| `title` | String (supports interpolation) |
+| `expandable` | `true`, `false` |
+| `padding` | Same as Block |
+| `border` | `true`, `false` |
+
+**Drawer:**
+| Attribute | Values |
+|-----------|--------|
+| `initialState` | `collapsed`, `expanded`, `expandFirst` |
+| `border` | `true`, `false` |
+
+**List:**
+| Attribute | Values |
+|-----------|--------|
+| `dataSource` | String (required) |
+| `separateItems` | `true`, `false` |
+| `itemSpacing` | `none`, `extraSmall`, `small`, `medium`, `large`, `extraLarge` |
+
+---
+
+## Common Validation Errors
+
+### Image Component
+
+```xml
+<!-- WRONG -->
+<Image imageUrl="{{url}}" width="48px" height="48px" />
+
+<!-- CORRECT -->
+<Image dataSource="imageUrl" size="48px" />
+```
+
+### Column Width
+
+Valid values: `"auto"`, `"stretch"`, `"{N}px"`, `"{N}%"`
+
+```xml
+<!-- WRONG -->
+<Column width="fill">
+
+<!-- CORRECT -->
+<Column width="stretch">
+```
+
+### Formula Font Attributes
+
+```xml
+<!-- WRONG -->
+<Formula fontSize="small" fontWeight="medium">{{value}}</Formula>
+
+<!-- CORRECT -->
+<Formula valueFontSize="small" valueFontWeight="medium">{{value}}</Formula>
+```
+
+---
+
+## Text Interpolation
+
+Use `{{ }}` delimiters to insert data into text:
+
+```xml
+<Card title="{{ orders | length }} Orders">
+<Text>Order placed on {{ orderDate | date('F j, Y') }}</Text>
+<Formula label="Total">{{ subtotal + tax + shipping }}</Formula>
+```
+
+### Available Filters
+
+| Filter | Purpose | Example |
+|--------|---------|---------|
+| `length` | Array count | `{{ orders \| length }}` |
+| `title` | Title case | `{{ status \| title }}` |
+| `upper` | Uppercase | `{{ code \| upper }}` |
+| `lower` | Lowercase | `{{ name \| lower }}` |
+| `date` | Format date | `{{ orderDate \| date('M/D/Y') }}` |
+| `format_currency` | Format money | `{{ total \| format_currency }}` |
+
+---
+
+## Testing Checklist
+
+Before deploying card templates:
+
+- [ ] Test with maximum length data (long names, addresses)
+- [ ] Test with minimum data (null/empty fields)
+- [ ] Verify labels don't truncate
+- [ ] Verify values don't overflow
+- [ ] Check drawer expand/collapse behavior
+- [ ] Verify currency formatting
+- [ ] Verify date formatting
+- [ ] Test conditional blocks with missing data

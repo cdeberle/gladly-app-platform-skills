@@ -324,3 +324,93 @@ enum OrderStatus {
 ### Breaking Change Warning
 
 Changing a field from `String` to enum is a **breaking change**.
+
+---
+
+## Field Descriptions
+
+Add GraphQL descriptions for fields that aren't self-explanatory:
+
+```graphql
+type Order @dataType(name: "acme_order", version: "1.0") {
+  id: ID!
+  orderNumber: String!
+
+  """
+  Current fulfillment status: pending, processing, shipped, delivered, cancelled
+  """
+  status: String
+
+  """
+  Total amount including tax and shipping
+  """
+  totalPrice: Currency
+
+  """
+  Original order placement date
+  """
+  orderDate: DateTime
+}
+```
+
+Use descriptions from the external system's API documentation when available.
+
+---
+
+## Custom Scalars
+
+Custom scalars like `DateTime` and `Currency` do **not** need to be defined in your schema. They are provided by the App Platform runtime:
+
+```graphql
+# NO NEED to define these:
+# scalar DateTime
+# scalar Currency
+
+# Just use them directly:
+type Order {
+  createdAt: DateTime
+  totalPrice: Currency
+}
+```
+
+---
+
+## Schema Ordering Rules
+
+**Important:** Types must be defined before they are referenced. App Platform GraphQL schemas do not support forward type declarations.
+
+```graphql
+# CORRECT ORDER:
+
+# 1. Embedded types (no @dataType)
+type LineItem {
+  id: String
+  productName: String
+}
+
+# 2. Child types with @dataType
+type Order @dataType(name: "acme_order", version: "1.0") {
+  id: ID!
+  lineItems: [LineItem]  # LineItem defined above
+}
+
+# 3. Parent types that reference children
+type Customer @dataType(name: "acme_customer", version: "1.0") {
+  id: ID!
+  orders: [Order] @parentId(template: "{{.id}}")  # Order defined above
+}
+
+# 4. Query type last
+type Query {
+  customer: Customer
+}
+```
+
+---
+
+## Unsupported Features
+
+The App Platform GraphQL implementation does **not** support:
+- Union types
+- Forward type declarations
+- Custom scalar definitions (use built-in DateTime, Currency)

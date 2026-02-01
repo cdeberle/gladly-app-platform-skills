@@ -5,59 +5,64 @@ description: Deploy and manage Gladly App Platform apps. Use this skill when tes
 
 # App Platform Deploy
 
-This skill guides you through deploying and managing Gladly App Platform applications.
+Deploy and manage Gladly App Platform applications across 4 operating modes.
 
 ## Prerequisites
 
-Ensure the `appcfg` CLI is installed. If not:
+Ensure `appcfg` CLI is installed: https://github.com/gladly/app-platform-appcfg-cli/releases
+
+### Verify Builder Completed (if coming from /app-platform-builder)
+
 ```bash
-cd /path/to/.app-platform-toolkit/appcfg-cli && ./install.sh
+ls manifest.json          # Must exist
+appcfg validate --root .  # Must return "valid"
 ```
+
+**If validation fails**: Return to `/app-platform-builder` Phase 7 to resolve issues.
+
+---
 
 ## Mode Detection
 
-Before proceeding, determine the current state:
+Determine current state before proceeding:
 
-| Check | Command | Result |
-|-------|---------|--------|
-| Is this an App Platform project? | `ls manifest.json` | Must exist |
-| Is there a built ZIP? | `ls *.zip` | Check for `{author}-{appName}-{version}.zip` |
-| Is .env configured? | `cat .env` | Must have HOST, USER, TOKEN |
-| Is app installed? | `appcfg apps list --root .` | Shows installed versions |
+```bash
+ls manifest.json        # Check: Is this an App Platform project?
+ls *.zip               # Check: Is there a built ZIP?
+cat .env               # Check: Is .env configured?
+appcfg apps list --root .  # Check: Is app installed?
+```
 
 ### Mode Selection
 
-| State | Mode | Actions |
-|-------|------|---------|
+| State | Mode | What to Do |
+|-------|------|------------|
 | No ZIP file | **DEVELOP** | Test → Validate → Build |
 | ZIP exists, not installed | **DEPLOY** | Install → Create config |
-| App installed, config needs changes | **UPDATE** | Update or delete configs |
-| New version, old version installed | **UPGRADE** | Install new → Upgrade configs → Cleanup |
+| App installed, need config changes | **UPDATE** | Modify existing configs |
+| New version ready, old installed | **UPGRADE** | Install new → Migrate configs |
+
+**Ask user**: "Based on the current state, I'll proceed with [MODE] mode. Continue?"
 
 ---
 
 ## DEVELOP Mode
 
-**When:** You have code but no built ZIP file.
+**When**: You have code but no built ZIP file.
+
+**Required Reading**: [command-reference.md](references/command-reference.md)
 
 ### Step 1: Test Data Pulls
 
-List available data pulls:
 ```bash
-ls data/pull/
-```
+# Test all data pulls
+appcfg test data-pull --root .
 
-Test each data pull:
-```bash
+# Or test specific pull
 appcfg test data-pull <name> --root .
 ```
 
-Test all data pulls at once:
-```bash
-appcfg test data-pull --root .
-```
-
-**On failure:** Check `_test_/<name>/_output_/` for detailed errors.
+**If tests fail**: Check `_test_/<name>/_output_/` for errors. See [troubleshooting.md](references/troubleshooting.md).
 
 ### Step 2: Validate
 
@@ -73,22 +78,34 @@ Must return `valid` before building.
 appcfg build --root .
 ```
 
-**Output:** `{author}-{appName}-{version}.zip`
+**Output**: `{author}-{appName}-{version}.zip`
+
+### DEVELOP MODE COMPLETE
+
+Verify:
+- [ ] All data pull tests pass
+- [ ] `appcfg validate --root .` returns "valid"
+- [ ] ZIP file created: `ls *.zip`
+
+**Ask user**: "Build complete. Ready to deploy (DEPLOY mode)?"
 
 ---
 
 ## DEPLOY Mode
 
-**When:** ZIP exists but app is not installed in target Gladly org.
+**When**: ZIP exists but app is not installed in target Gladly org.
+
+**Required Reading**: [command-reference.md](references/command-reference.md)
 
 ### Prerequisites: Configure .env
 
 The `.env` file must contain:
+
 ```bash
 GLADLY_APP_CFG_ROOT="/path/to/app"
 GLADLY_APP_CFG_HOST=[org-name].us-uat.gladly.qa    # UAT
 # or                [org-name].us-1.gladly.com     # Production
-GLADLY_APP_CFG_USER=email@domain.com               # Email tied to API token
+GLADLY_APP_CFG_USER=email@domain.com
 GLADLY_APP_CFG_TOKEN=<api-token>
 ```
 
@@ -104,7 +121,14 @@ appcfg apps install -f "./{author}-{appName}-{version}.zip" --root .
 appcfg apps list --root .
 ```
 
-### Step 3: Create Configuration
+### Step 3: Find Required Config Fields
+
+```bash
+grep -r "integration.configuration" data/ authentication/
+grep -r "integration.secrets" data/ authentication/
+```
+
+### Step 4: Create Configuration
 
 ```bash
 appcfg apps config create "{author}/{appName}/v{version}" \
@@ -115,17 +139,22 @@ appcfg apps config create "{author}/{appName}/v{version}" \
   --root .
 ```
 
-**Note:** Find required config fields by searching templates:
-```bash
-grep -r "integration.configuration" data/ authentication/
-grep -r "integration.secrets" data/ authentication/
-```
+### DEPLOY MODE COMPLETE
+
+Verify:
+- [ ] App shows in `appcfg apps list --root .`
+- [ ] Config shows in `appcfg apps config list --root .`
+- [ ] Config is active
+
+**If credentials error**: Verify .env has correct HOST, USER, TOKEN. See [troubleshooting.md](references/troubleshooting.md#credentials-error).
 
 ---
 
 ## UPDATE Mode
 
-**When:** App is installed and you need to modify existing configurations.
+**When**: App is installed and you need to modify existing configurations.
+
+**Required Reading**: [command-reference.md](references/command-reference.md)
 
 ### List Current Configurations
 
@@ -133,7 +162,7 @@ grep -r "integration.secrets" data/ authentication/
 appcfg apps config list --root .
 ```
 
-### Update Configuration
+### Update Operations
 
 ```bash
 # Update name
@@ -150,62 +179,99 @@ appcfg apps config update "<config-name>" --activate --root .
 appcfg apps config update "<config-name>" --deactivate --root .
 ```
 
-### Delete Configuration (Careful!)
+### Delete Configuration (Use Caution)
 
-**WARNING:** Deletion is irreversible.
+**WARNING**: Deletion is irreversible.
 
-1. First deactivate:
+1. Deactivate first:
    ```bash
    appcfg apps config update "<config-name>" --deactivate --root .
    ```
-
-2. Monitor for issues (recommended: several days)
-
+2. Recommend: Monitor for issues before deleting
 3. Then delete:
    ```bash
    appcfg apps config delete "<config-name>" --root .
    ```
 
+### UPDATE MODE COMPLETE
+
+Verify:
+- [ ] Config changes applied
+- [ ] Run `appcfg apps config list --root .` to confirm
+
 ---
 
 ## UPGRADE Mode
 
-**When:** New app version is ready, older version is installed with existing configs.
+**When**: New app version is ready, older version is installed with existing configs.
 
-### Step 1: Install New Version
+**Required Reading**: [schema-versioning.md](references/schema-versioning.md)
+
+### Determine Change Type
+
+| Change Type | Breaking? | Path |
+|-------------|-----------|------|
+| Add new field | No | `appcfg apps upgrade` |
+| Add enum value | No | `appcfg apps upgrade` |
+| Remove field | **Yes** | New config required |
+| String → enum | **Yes** | New config required |
+| String → DateTime | **Yes** | New config required |
+
+### Non-Breaking Upgrade (Minor Version)
 
 ```bash
+# 1. Install new version
 appcfg apps install -f "./{author}-{appName}-{newVersion}.zip" --root .
-```
 
-Both versions now coexist.
-
-### Step 2: Upgrade Configurations
-
-Move all configs from old version to new:
-```bash
+# 2. Upgrade all configs
 appcfg apps upgrade "{author}/{appName}/v{oldVersion}" -n v{newVersion} --root .
-```
 
-**Requirements:**
-- New version must be installed first
-- Only works within same major version (1.x → 1.y, NOT 1.x → 2.x)
-- For breaking changes (major version), create new configs instead
-
-### Step 3: Verify
-
-```bash
+# 3. Verify
 appcfg apps config list --root .
+
+# 4. Cleanup old version (keep N and N-1 for rollback)
+appcfg apps uninstall "{author}/{appName}/v{veryOldVersion}" --root .
 ```
 
-### Step 4: Cleanup Old Version (Optional)
+### Breaking Upgrade (Major Version)
 
-After confirming everything works:
 ```bash
-appcfg apps uninstall "{author}/{appName}/v{oldVersion}" --root .
+# 1. Install new version
+appcfg apps install -f "./{author}-{appName}-{newVersion}.zip" --root .
+
+# 2. Create NEW configuration (can't upgrade across major versions)
+appcfg apps config create "{author}/{appName}/v{newVersion}" \
+  --name "Config Name" \
+  --config '{"apiBaseUrl": "...", "brandSlug": "..."}' \
+  --activate \
+  --root .
+
+# 3. Deactivate old config (keep for rollback)
+appcfg apps config update "Old Config" --deactivate --root .
 ```
 
-**Best Practice:** Keep N and N-1 versions for rollback capability.
+### UPGRADE MODE COMPLETE
+
+Verify:
+- [ ] New version shows in `appcfg apps list --root .`
+- [ ] Configs point to new version
+- [ ] Old version kept for rollback (N-1)
+
+**If upgrade fails**: See [troubleshooting.md](references/troubleshooting.md#upgrade-fails).
+
+---
+
+## Rollback Procedure
+
+If issues arise after deployment:
+
+```bash
+# Reactivate previous config
+appcfg apps config update "Old Config" --activate --root .
+
+# Deactivate problematic config
+appcfg apps config update "New Config" --deactivate --root .
+```
 
 ---
 
@@ -219,51 +285,17 @@ appcfg apps uninstall "{author}/{appName}/v{oldVersion}" --root .
 | Install | `appcfg apps install -f <zip> --root .` |
 | List apps | `appcfg apps list --root .` |
 | List configs | `appcfg apps config list --root .` |
-| Create config | `appcfg apps config create <app-id> --name <name> --config '<json>' --activate --root .` |
-| Update config | `appcfg apps config update <name> [--config/--secrets/--name/--activate/--deactivate] --root .` |
+| Create config | `appcfg apps config create <app-id> --name <n> --config '<json>' --activate --root .` |
+| Update config | `appcfg apps config update <name> [options] --root .` |
 | Upgrade configs | `appcfg apps upgrade <old-app-id> -n v<new> --root .` |
-| Delete config | `appcfg apps config delete <name> --root .` |
-| Uninstall app | `appcfg apps uninstall <app-id> --root .` |
 | View logs | `appcfg apps logs list --root .` |
-| Check outdated | `appcfg apps config outdated --root .` |
 
 ---
 
-## Breaking vs Non-Breaking Changes
+## Reference Documentation
 
-| Change Type | Breaking? | Version Bump | Path |
-|-------------|-----------|--------------|------|
-| Add new field | No | Minor (x.Y.z) | `appcfg apps upgrade` |
-| Add enum value | No | Minor | `appcfg apps upgrade` |
-| Remove field | **Yes** | Major (X.0.0) | New config required |
-| String → enum | **Yes** | Major | New config required |
-| String → DateTime | **Yes** | Major | New config required |
-| Change nullability | **Yes** | Major | New config required |
-
----
-
-## Common Issues
-
-### "Something's wrong with this card"
-1. Run `appcfg test data-pull <name>` for each data pull
-2. Test with `appcfg run data-graphql` against real API
-3. Check dependent data pulls succeed first
-4. Verify JSON output is valid (no trailing commas)
-
-### Credentials Error
-- Verify .env has correct HOST, USER, TOKEN
-- Check API token has appropriate permissions
-- Ensure HOST matches environment (UAT vs Production)
-
-### Upgrade Fails
-- Cannot upgrade across major versions
-- New version must be installed before upgrading
-- For breaking changes, create new configurations
-
----
-
-## References
-
-- [command-reference.md](references/command-reference.md) - Complete command documentation
-- [troubleshooting.md](references/troubleshooting.md) - Debugging workflow and error resolution
-- [schema-versioning.md](references/schema-versioning.md) - Version management and deployment patterns
+| When | Read |
+|------|------|
+| CLI commands | [command-reference.md](references/command-reference.md) |
+| Version management | [schema-versioning.md](references/schema-versioning.md) |
+| Debugging | [troubleshooting.md](references/troubleshooting.md) |

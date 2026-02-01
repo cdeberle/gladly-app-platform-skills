@@ -8,32 +8,27 @@ When a card fails to load with "Something's wrong with this card", follow this s
 
 ### Step 1: Check Server Logs
 ```bash
-appcfg logs
+appcfg apps logs list --root .
 ```
 - Often empty for template-related issues
 - Useful for authentication or network errors
 
-### Step 2: Enable Detailed Logging
+### Step 2: Test Data Pull Locally
 ```bash
-appcfg logs --level debug
-```
-
-### Step 3: Test Data Pull Locally
-```bash
-appcfg test data-pull <pull-name>
+appcfg test data-pull <pull-name> --root .
 ```
 - Uses test fixtures in `_test_/` directory
 - Validates template syntax and transformation logic
 - **Does not** test against real API
 
-### Step 4: Test Against Real API
+### Step 3: Test Against Real API
 ```bash
-appcfg data-graphql
+appcfg run data-graphql --root .
 ```
 Then run a query like:
 ```graphql
 query {
-  customer(email: "christian@gladly.com") {
+  customer(email: "test@example.com") {
     id
     orders { id orderNumber }
   }
@@ -43,7 +38,7 @@ query {
 - Reveals runtime issues not caught by local tests
 - Essential for catching empty array handling bugs
 
-### Step 5: Create Edge Case Test Fixtures
+### Step 4: Create Edge Case Test Fixtures
 Add fixtures for:
 - Empty arrays: `{"data": [], "pagination": {...}}`
 - Missing fields
@@ -86,8 +81,8 @@ Add fixtures for:
 4. Dependent data pull failed silently
 
 **Debug steps:**
-1. Run `appcfg test data-pull <name>` for each data pull
-2. Test with `appcfg data-graphql` against real API
+1. Run `appcfg test data-pull <name> --root .` for each data pull
+2. Test with `appcfg run data-graphql --root .` against real API
 3. Check that all `dependsOnDataTypes` pulls succeed first
 4. Verify JSON output is valid (no trailing commas, proper escaping)
 
@@ -125,22 +120,48 @@ Add fixtures for:
 
 ---
 
+### Credentials Error
+
+**Symptoms:** Commands fail with authentication or permission errors.
+
+**Check:**
+1. Verify `.env` has correct values:
+   - `GLADLY_APP_CFG_HOST` matches target environment (UAT vs Production)
+   - `GLADLY_APP_CFG_USER` is the email tied to the API token
+   - `GLADLY_APP_CFG_TOKEN` is valid and not expired
+2. Verify API token has appropriate permissions
+
+---
+
+### Upgrade Fails
+
+**Symptoms:** `appcfg apps upgrade` command fails.
+
+**Common causes:**
+1. **Cannot upgrade across major versions** - Breaking changes require new configs
+2. **New version not installed** - Install new version before upgrading
+3. **Version doesn't exist** - Verify version string format
+
+**Fix:** For breaking changes (major version bump), create new configurations instead of upgrading.
+
+---
+
 ## Decision Tree: Card Loading Failures
 
 ```
 Card fails to load
 │
-├─ Check appcfg logs
+├─ Check appcfg apps logs list --root .
 │  ├─ Auth error → Check credentials in integration config
 │  ├─ Network error → Check API URL, firewall
 │  └─ Empty logs → Continue...
 │
-├─ Run appcfg test data-pull <name>
+├─ Run appcfg test data-pull <name> --root .
 │  ├─ Template error → Fix template syntax
 │  ├─ Test passes → Continue...
-│  └─ No test fixtures → Create _test_/input.json
+│  └─ No test fixtures → Create _test_/default/
 │
-├─ Run appcfg data-graphql with real email
+├─ Run appcfg run data-graphql --root . with real email
 │  ├─ Error returned → Check response_transformation.gtpl
 │  ├─ Empty data → Check if customer exists in external system
 │  └─ Data returned → Check UI template binding

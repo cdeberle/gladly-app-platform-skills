@@ -25,6 +25,99 @@ actions/<action_name>/
 
 ---
 
+## Context Data Structures
+
+### request_url.gtpl and request_body.gtpl Context
+
+```jsonc
+{
+    "integration": {
+        // Dynamic configuration associated with the app
+        "configuration": {},
+        // Secrets for making REST calls
+        "secrets": {}
+    },
+    // Input values from the GraphQL mutation arguments
+    "inputs": {}
+}
+```
+
+The structure of `inputs` corresponds to the GraphQL field arguments. For example:
+
+```graphql
+type Mutation {
+  cancelOrder(orderId: String!, reason: String!): ActionResult @action(name: "cancel_order")
+}
+```
+
+Would provide:
+```json
+{
+  "inputs": {
+    "orderId": "order_123",
+    "reason": "Customer requested"
+  }
+}
+```
+
+### response_transformation.gtpl Context
+
+```jsonc
+{
+    "integration": {
+        "configuration": {},
+        "secrets": {}
+    },
+    // The inputs for the GraphQL field
+    "inputs": {},
+    "request": {
+        // The request URL from request_url.gtpl
+        "url": "",
+        // The HTTP method from config.json
+        "method": "",
+        // Headers from authentication/headers/
+        "headers": {
+            "header_name": ["header value"]
+        },
+        // Raw bytes of the request body
+        "body": ""
+    },
+    "response": {
+        // HTTP response status text
+        "status": "",
+        // HTTP response status code
+        "statusCode": 200,
+        // Response headers
+        "headers": {
+            "response_header_name": ["header value"]
+        },
+        // Raw bytes of the response body
+        "body": ""
+    },
+    // The raw response data
+    // - For JSON: object or array
+    // - For XML: Gladly-specific XML DOM
+    // - For rawResponse=true: byte array
+    "rawData": {}
+}
+```
+
+**Important:** Action response transformations MUST handle non-success status codes. The platform does not filter errors for actions like it does for data pulls. Authentication errors (401/403) are handled automatically.
+
+### config.json with rawResponse
+
+Set `rawResponse: true` when the response Content-Type is not JSON or XML:
+
+```json
+{
+    "httpMethod": "POST",
+    "contentType": "application/json",
+    "rawResponse": true
+}
+```
+
+---
+
 ## config.json
 
 ### POST Action

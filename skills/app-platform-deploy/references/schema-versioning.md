@@ -24,37 +24,38 @@ Always maintain the current version plus one previous version for rollback. Clea
 
 ```bash
 # 1. Build new version
-appcfg build  # Creates app-v1.1.0.zip
+appcfg build --root .  # Creates app-v1.1.0.zip
 
 # 2. Install new version alongside current
-appcfg apps install --filepath "app-v1.1.0.zip"
+appcfg apps install -f "app-v1.1.0.zip" --root .
 
 # 3. Upgrade existing configuration to new version
-appcfg apps upgrade "author/appName/v1.0.5" --new-version v1.1.0
+appcfg apps upgrade "author/appName/v1.0.5" -n v1.1.0 --root .
 
 # 4. Clean up versions older than N-1 (keep v1.1.0 and v1.0.5)
-appcfg apps uninstall "author/appName/v1.0.4"
-appcfg apps uninstall "author/appName/v1.0.3"
+appcfg apps uninstall "author/appName/v1.0.4" --root .
+appcfg apps uninstall "author/appName/v1.0.3" --root .
 ```
 
 ### Major Version Upgrade (Breaking Changes)
 
 ```bash
 # 1. Build new major version
-appcfg build  # Creates app-v3.0.0.zip
+appcfg build --root .  # Creates app-v3.0.0.zip
 
 # 2. Install new version alongside current
-appcfg apps install --filepath "app-v3.0.0.zip"
+appcfg apps install -f "app-v3.0.0.zip" --root .
 
 # 3. Create new configuration (can't use upgrade path for breaking changes)
 appcfg apps config create "author/appName/v3.0.0" \
   --name "Config Name" \
   --activate \
   --config '{"apiBaseUrl":"...","brandSlug":"..."}' \
-  --secrets '{}'
+  --secrets '{}' \
+  --root .
 
 # 4. Deactivate old configuration (keep for rollback)
-appcfg apps config update "Old Config Name" --deactivate
+appcfg apps config update "Old Config Name" --deactivate --root .
 
 # 5. Clean up versions older than N-1
 # Keep: v3.0.0 (current) and v2.0.2 (rollback)
@@ -67,8 +68,8 @@ appcfg apps config update "Old Config Name" --deactivate
 
 ```bash
 # Reactivate previous version's config:
-appcfg apps config update "Old Config Name" --activate
-appcfg apps config update "Config Name" --deactivate
+appcfg apps config update "Old Config Name" --activate --root .
+appcfg apps config update "Config Name" --deactivate --root .
 ```
 
 ---
@@ -98,16 +99,17 @@ appcfg apps config create "author/app/v1.0.0" \
   --name "Config Name" \
   --activate \
   --config '{"key":"value"}' \
-  --secrets '{"secret":"value"}'
+  --secrets '{"secret":"value"}' \
+  --root .
 
 # Deactivate (prepare for deletion or rollback reserve)
-appcfg apps config update "Config Name" --deactivate
+appcfg apps config update "Config Name" --deactivate --root .
 
 # Reactivate (rollback)
-appcfg apps config update "Config Name" --activate
+appcfg apps config update "Config Name" --activate --root .
 
 # Delete (only inactive configs)
-appcfg apps config delete "Config Name"
+appcfg apps config delete "Config Name" --root .
 ```
 
 ---
@@ -125,11 +127,11 @@ grep -r "integration.secrets" data/ authentication/
 
 ## Pre-Deployment Checklist
 
-1. [ ] Run `appcfg validate` - schema and templates valid
-2. [ ] Run `appcfg test data-pull {name}` for all data pulls
+1. [ ] Run `appcfg validate --root .` - schema and templates valid
+2. [ ] Run `appcfg test data-pull --root .` for all data pulls
 3. [ ] Determine if changes are breaking (see table above)
 4. [ ] Bump version appropriately in `manifest.json`
-5. [ ] Build with `appcfg build`
+5. [ ] Build with `appcfg build --root .`
 6. [ ] Install new version alongside existing
 7. [ ] Create/upgrade configuration
 8. [ ] Verify functionality
